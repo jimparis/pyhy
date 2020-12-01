@@ -353,12 +353,44 @@ def test_kx_xx():
     print('test_kx_xx finished successfully')
     return
 
+def test_kx_nk():
+    print('\ntest_kx_nk')
+    print('Server: Generate pubkey')
+    server_kp = hydro_kx_keygen()
+
+    nk_client = hydro_kx_nk_client()
+    pkt1 = nk_client.nk_1(server_kp.pk)
+    assert pkt1 != None
+    print('pkt1 hex:', pkt1.hex())
+
+    # pkt1 across medium from client --> server
+
+    print('Server: process pkt1, generate kp + pkt2')
+    session_kp_server, pkt2 = hydro_kx_nk_2(pkt1, server_kp)
+    assert session_kp_server != None
+    assert pkt2 != None
+    print('pkt2 hex:', pkt2.hex())
+    # dump_session_keypair_hex(session_kp_server)
+
+    # pkt2 across medium from server --> client
+
+    print('Client: process pkt2, generate session keys')
+    session_kp_client = nk_client.nk_3(pkt2)
+    # dump_session_keypair_hex(session_kp_client)
+    assert session_kp_client != None
+
+    assert (hydro_equal(session_kp_client.tx, session_kp_server.rx) == True)
+    assert (hydro_equal(session_kp_client.rx, session_kp_server.tx) == True)
+    print('test_kx_nk finished successfully')
+    return
+
 def test_kx():
     print('\n------------------------- test_kx (all) -------------------------')
     test_kx_keypairs()
     test_kx_n()
     test_kx_kk()
     test_kx_xx()
+    test_kx_nk()
 
 ################################################################################
 # pwhash

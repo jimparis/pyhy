@@ -55,6 +55,9 @@ __all__ = [
     # kx - NOISE_XX
     'hydro_kx_xx_1', 'hydro_kx_xx_2', 'hydro_kx_xx_3', 'hydro_kx_xx_4',
     'hydro_kx_xx_client', 'hydro_kx_xx_server',
+    # kx - NOISE_NK
+    'hydro_kx_nk_1', 'hydro_kx_nk_2', 'hydro_kx_nk_3',
+    'hydro_kx_nk_client',
     # pwhash
     'hydro_pwhash_keygen',
     'hydro_pwhash_deterministic',
@@ -527,6 +530,46 @@ class hydro_kx_xx_server(object):
         return hydro_kx_xx_4(self.st, pkt3, self.psk)
 # ---------------------------------------------------------------------------- #
 
+# ------------------------------------ NK ------------------------------------ #
+__all__ += [ 'hydro_kx_NK_PACKET1BYTES', 'hydro_kx_NK_PACKET2BYTES' ]
+hydro_kx_NK_PACKET1BYTES = h.hydro_kx_NK_PACKET1BYTES
+hydro_kx_NK_PACKET2BYTES = h.hydro_kx_NK_PACKET2BYTES
+
+def hydro_kx_nk_1(st_client, server_pubkey, psk=None):
+    pkt1 = ffi.new('uint8_t[]', h.hydro_kx_NK_PACKET1BYTES)
+    if psk is None:
+        psk = ffi.NULL
+    if (h.hydro_kx_nk_1(st_client, pkt1, psk, server_pubkey) != 0):
+        return None
+    return bytes(pkt1)
+
+def hydro_kx_nk_2(pkt1, server_kp, psk=None):
+    pkt2 = ffi.new('uint8_t[]', h.hydro_kx_NK_PACKET2BYTES)
+    if psk is None:
+        psk = ffi.NULL
+    session_kp_server = ffi.new('hydro_kx_session_keypair *')
+    if (h.hydro_kx_nk_2(session_kp_server, pkt2, pkt1, psk, server_kp) != 0):
+        return (None, None)
+    return (session_kp_server, bytes(pkt2))
+
+def hydro_kx_nk_3(st_client, pkt2):
+    session_kp_client = ffi.new('hydro_kx_session_keypair *')
+    if (h.hydro_kx_nk_3(st_client, session_kp_client, pkt2) != 0):
+        return None
+    return session_kp_client
+
+# ------------------------------- NK (helpers) ------------------------------- #
+class hydro_kx_nk_client(object):
+    """wrapper class for client for nk-type kx"""
+    def __init__(self):
+        self.st = ffi.new('hydro_kx_state *')
+
+    def nk_1(self, server_pubkey, psk=None):
+        return hydro_kx_nk_1(self.st, server_pubkey, psk)
+
+    def nk_3(self, pkt2):
+        return hydro_kx_nk_3(self.st, pkt2)
+# ---------------------------------------------------------------------------- #
 
 ################################################################################
 # pwhash
